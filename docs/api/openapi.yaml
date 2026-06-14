@@ -1,0 +1,304 @@
+"""
+Gold Analysis Platform - OpenAPI 規格
+"""
+openapi_spec = """
+openapi: 3.0.3
+info:
+  title: Gold Analysis Platform API
+  description: |
+    黃金分析系統平台 API
+    
+    ## 認證
+    所有 API 請求需要在 Header 中攜帶有效的 API Key：
+    ```
+    Authorization: Bearer <your_api_key>
+    ```
+    
+    ## 速率限制
+    - 免費方案：100 請求/小時
+    - 專業方案：1000 請求/小時
+    - 企業方案：無限制
+    
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: api@gold-analysis.example.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://api.gold-analysis.example.com/v1
+    description: Production
+  - url: http://localhost:8002/v1
+    description: Development
+
+tags:
+  - name: market
+    description: 市場數據
+  - name: analysis
+    description: 分析結果
+  - name: decision
+    description: 交易決策
+  - name: portfolio
+    description: 投資組合
+  - name: alert
+    description: 價格告警
+  - name: user
+    description: 用戶管理
+
+paths:
+  /market/price:
+    get:
+      tags: [market]
+      summary: 獲取當前金價
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PriceResponse'
+  
+  /market/history:
+    get:
+      tags: [market]
+      summary: 獲取歷史價格
+      parameters:
+        - name: start_date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: end_date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HistoryResponse'
+  
+  /analysis/technical:
+    get:
+      tags: [analysis]
+      summary: 獲取技術分析
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TechnicalAnalysis'
+  
+  /decision/recommend:
+    get:
+      tags: [decision]
+      summary: 獲取交易決策推薦
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DecisionResponse'
+  
+  /portfolio:
+    get:
+      tags: [portfolio]
+      summary: 列出用戶投資組合
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Portfolio'
+    
+    post:
+      tags: [portfolio]
+      summary: 創建投資組合
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PortfolioCreate'
+      responses:
+        '201':
+          description: 創建成功
+  
+  /alert:
+    get:
+      tags: [alert]
+      summary: 列出告警
+      responses:
+        '200':
+          description: 成功
+    
+    post:
+      tags: [alert]
+      summary: 創建告警
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlertCreate'
+      responses:
+        '201':
+          description: 創建成功
+
+components:
+  schemas:
+    PriceResponse:
+      type: object
+      properties:
+        price:
+          type: number
+          example: 4887.00
+        currency:
+          type: string
+          example: TWD
+        timestamp:
+          type: string
+          format: date-time
+        change:
+          type: number
+          example: 12.50
+        change_pct:
+          type: number
+          example: 0.26
+    
+    HistoryResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              date:
+                type: string
+                format: date
+              open:
+                type: number
+              high:
+                type: number
+              low:
+                type: number
+              close:
+                type: number
+    
+    TechnicalAnalysis:
+      type: object
+      properties:
+        indicators:
+          type: object
+          properties:
+            ma5:
+              type: number
+            ma10:
+              type: number
+            ma20:
+              type: number
+            rsi:
+              type: number
+            macd:
+              type: number
+        signals:
+          type: array
+          items:
+            type: string
+    
+    DecisionResponse:
+      type: object
+      properties:
+        action:
+          type: string
+          enum: [buy, sell, hold]
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 100
+        reasons:
+          type: array
+          items:
+            type: string
+        price_target:
+          type: number
+        stop_loss:
+          type: number
+    
+    Portfolio:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        initial_capital:
+          type: number
+        current_value:
+          type: number
+        return_pct:
+          type: number
+        positions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Position'
+    
+    Position:
+      type: object
+      properties:
+        asset:
+          type: string
+        quantity:
+          type: number
+        avg_cost:
+          type: number
+        current_price:
+          type: number
+        pnl:
+          type: number
+    
+    PortfolioCreate:
+      type: object
+      required: [name, initial_capital]
+      properties:
+        name:
+          type: string
+        initial_capital:
+          type: number
+    
+    AlertCreate:
+      type: object
+      required: [type, target_price]
+      properties:
+        type:
+          type: string
+          enum: [price_above, price_below]
+        target_price:
+          type: number
+        channels:
+          type: array
+          items:
+            type: string
+  
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: APIKey
+
+security:
+  - bearerAuth: []
+"""
